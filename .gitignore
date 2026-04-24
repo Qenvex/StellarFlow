@@ -31,6 +31,7 @@ Carthage/Build/
 # 에디터
 .vscode/
 .idea/
+.claude
 
 # 기타
 *.swp

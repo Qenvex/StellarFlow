@@ -45,12 +45,14 @@
 		E248AC8849283DF9F8241B2B /* PhysicsCategory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhysicsCategory.swift; sourceTree = "<group>"; };
 		E30139AED98425B3B61E602C /* WorldGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldGenerator.swift; sourceTree = "<group>"; };
 		E9E4599C2F9BB98C006079B0 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		E9E4599D2F9BBCFF006079B0 /* todo.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = todo.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		4DB932FB5914D1DE07205E2A = {
 			isa = PBXGroup;
 			children = (
+				E9E4599D2F9BBCFF006079B0 /* todo.md */,
 				807AD825B03CBFA3A0F90DFD /* StellarFlow */,
 				5E10A3A91C5CA1CA0C8060AA /* Products */,
 				E9E4599C2F9BB98C006079B0 /* .gitignore */,
