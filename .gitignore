@@ -1,0 +1,37 @@
+//
+//  .gitignore
+//  StellarFlow
+//
+//  Created by KimJiHoon on 4/24/26.
+//
+
+# macOS
+.DS_Store
+
+# Xcode — 사용자별 상태
+xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+*.xccheckout
+
+# 빌드 산출물
+build/
+DerivedData/
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+Package.resolved
+
+# CocoaPods / Carthage (사용 안하지만 혹시 나중에)
+Pods/
+Carthage/Build/
+                
+# 에디터
+.vscode/
+.idea/
+
+# 기타
+*.swp
+*.hmap
