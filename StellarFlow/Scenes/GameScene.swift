@@ -68,6 +68,9 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         setupPlayer()
         setupHUD()
         showStartHint()
+
+        // 게임 BGM — 파일이 없으면 no-op
+        AudioManager.shared.playBGM(named: "game", fadeIn: 1.6)
     }
 
     private func setupPhysics() {
@@ -192,6 +195,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         isHolding = false
         showPauseOverlay()
         Haptics.impact(.light)
+        AudioManager.shared.pauseBGM()
     }
 
     private func showPauseOverlay() {
@@ -251,6 +255,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         isGamePaused = false
         pauseOverlay?.removeFromParent()
         pauseOverlay = nil
+        AudioManager.shared.resumeBGM()
     }
 
     private func quitToMenu() {
@@ -365,6 +370,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
 
         state = .flying(velocity: finalVelocity)
         Haptics.impact(planet.kind == .booster ? .medium : .light)
+        AudioManager.shared.playSFX(named: planet.kind == .booster ? "boost" : "launch")
     }
 
     /// 비행 중 Hold — 가장 가까운 행성의 중력장 내에 있다면 포획.
@@ -411,6 +417,7 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
                           radius: r, speedMultiplier: initialMultiplier)
         score.gain(forCatchOf: planet.kind)
         Haptics.impact(.medium)
+        AudioManager.shared.playSFX(named: "catch")
         playCatchFlourish(on: planet)
     }
 
@@ -506,7 +513,10 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
                 break
             }
 
-            if case .dead = state { break }  // die() 가 상태를 바꿨을 수 있음
+            // 내부 switch에서 dieFromCrash() 또는 launchFromOrbit()이 호출되면
+            // state가 .orbiting이 아닌 다른 값으로 바뀌었을 수 있다.
+            // 이 경우 아래의 orbit 위치/state 갱신을 건너뛰어야 한다 (안 그러면 .flying을 .orbiting으로 덮어씀).
+            guard case .orbiting = state else { break }
 
             angle += abs(planet.angularSpeed) * speedMultiplier * direction * dt
             player.position = planet.position + CGPoint(x: cos(angle) * radius, y: sin(angle) * radius)
@@ -687,6 +697,8 @@ final class GameScene: SKScene, SKPhysicsContactDelegate {
         isHolding = false
         player.pulseDeath()
         Haptics.impact(.heavy)
+        AudioManager.shared.playSFX(named: "death")
+        AudioManager.shared.stopBGM(fadeOut: 0.6)
         let isHigh = score.commitIfHighScore()
         let finalScore = score.score
         let highScore = score.highScore

@@ -8,6 +8,9 @@ final class MenuScene: SKScene {
 
         seedStars()
         buildUI()
+
+        // BGM 시작 — 파일이 없으면 no-op
+        AudioManager.shared.playBGM(named: "menu", fadeIn: 1.2)
     }
 
     private func seedStars() {
@@ -85,6 +88,7 @@ final class MenuScene: SKScene {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        AudioManager.shared.playSFX(named: "ui_tap")
         let scene = GameScene(size: size)
         scene.scaleMode = scaleMode
         view?.presentScene(scene, transition: .crossFade(withDuration: 0.5))

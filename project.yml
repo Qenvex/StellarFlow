@@ -55,6 +55,11 @@ targets:
     deploymentTarget: "16.0"
     sources:
       - path: StellarFlow
+        excludes:
+          - "Audio/**"
+      - path: StellarFlow/Audio
+        type: folder
+        buildPhase: resources
     resources:
       - path: StellarFlow/Assets.xcassets
       - path: StellarFlow/Base.lproj
