@@ -21,6 +21,9 @@ Stellar Flow 개발 로드맵 및 개선 아이디어.
 - [x] 일시정지 오버레이 (Resume / Quit)
 - [x] 햅틱 피드백 (catch / launch / death)
 - [x] Xcode recommended build settings
+- [x] AudioManager 스캐폴드 (BGM/SFX 재생, 음량, 뮤트, 파일 없으면 safe no-op)
+- [x] CustomizationCatalog 스캐폴드 (배경 4종 / 행성 스킨 3종 / 플레이어 스킨 4종 프리셋)
+- [x] Audio 폴더(BGM / SFX) + Assets.xcassets 하위 그룹(Backgrounds / PlanetSkins / PlayerSkins) 준비
 
 ## 기획서 기반 미구현 기믹
 
