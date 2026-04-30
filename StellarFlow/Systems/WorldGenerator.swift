@@ -51,10 +51,13 @@ final class WorldGenerator {
     // MARK: - 상단에 계속 새 행성 추가
 
     /// 카메라(=플레이어가 보는 최상단) 위로 버퍼만큼 채운다.
-    func ensurePlanetsAhead(cameraTopY: CGFloat) {
+    /// 프레임당 최대 `maxPerFrame`개만 생성해 hitch 방지 (다음 프레임에 이어서 채움).
+    func ensurePlanetsAhead(cameraTopY: CGFloat, maxPerFrame: Int = 1) {
         let targetY = cameraTopY + worldHeight * 1.2
-        while (lastPlanet?.position.y ?? -.infinity) < targetY {
+        var spawned = 0
+        while (lastPlanet?.position.y ?? -.infinity) < targetY && spawned < maxPerFrame {
             spawnNextPlanet()
+            spawned += 1
         }
     }
 

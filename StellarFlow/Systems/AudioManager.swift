@@ -59,23 +59,47 @@ final class AudioManager {
     // MARK: - Audio session
 
     private func configureAudioSession() {
+        ensureSessionActive()
+    }
+
+    /// 매 재생 직전 안전하게 호출 가능. category 미설정/비활성 상태면 다시 설정한다.
+    private func ensureSessionActive() {
         #if os(iOS)
+        let session = AVAudioSession.sharedInstance()
         do {
-            // Ambient — 다른 앱 오디오(예: 사용자가 틀어둔 음악)를 방해하지 않음
-            try AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [])
-            try AVAudioSession.sharedInstance().setActive(true)
+            // soloAmbient — 다른 앱 음악은 정지, 무음 스위치는 따름.
+            if session.category != .soloAmbient {
+                try session.setCategory(.soloAmbient, mode: .default, options: [])
+            }
+            try session.setActive(true)
         } catch {
-            // 오디오 세션 설정 실패 — 치명적이지 않으므로 무시
+            #if DEBUG
+            print("[AudioManager] AVAudioSession activate failed: \(error)")
+            #endif
         }
         #endif
     }
 
     // MARK: - File lookup
 
+    /// 번들에서 오디오 파일 위치 탐색.
+    /// Audio/ 가 파란 폴더 참조로 번들된 경우, `Bundle.main.url(forResource:withExtension:)`은
+    /// 최상위만 검색하므로 `subdirectory:`를 명시해 하위 폴더까지 살핀다.
+    private let resourceSearchPaths: [String?] = [
+        nil,            // 번들 루트 (노란 그룹 또는 평탄화된 리소스)
+        "Audio/BGM",
+        "Audio/SFX",
+        "Audio"
+    ]
+
     private func urlForResource(named name: String) -> URL? {
         for ext in supportedExtensions {
-            if let url = Bundle.main.url(forResource: name, withExtension: ext) {
-                return url
+            for subdir in resourceSearchPaths {
+                if let url = Bundle.main.url(forResource: name,
+                                             withExtension: ext,
+                                             subdirectory: subdir) {
+                    return url
+                }
             }
         }
         return nil
@@ -89,7 +113,9 @@ final class AudioManager {
         if currentBGMName == name, bgmPlayer?.isPlaying == true { return }
 
         guard let url = urlForResource(named: name) else {
-            // 파일이 없으면 현재 재생 중이던 것만 유지
+            #if DEBUG
+            print("[AudioManager] BGM not found in bundle: \(name)")
+            #endif
             return
         }
 
@@ -136,17 +162,50 @@ final class AudioManager {
 
     // MARK: - SFX
 
+    /// 지정된 SFX들을 미리 메모리에 로드 (씬 진입 직전 호출 권장).
+    /// 첫 재생 시의 AVAudioPlayer 할당으로 인한 메인 스레드 hitch를 방지.
+    func preloadSFX(names: [String]) {
+        for name in names {
+            guard let url = urlForResource(named: name) else { continue }
+            // 이미 같은 URL 플레이어가 있다면 스킵
+            if sfxPlayers.contains(where: { $0.url == url }) { continue }
+            do {
+                let player = try AVAudioPlayer(contentsOf: url)
+                player.volume = 0  // 프리로드 — 무음 상태로 prepare만
+                player.prepareToPlay()
+                sfxPlayers.append(player)
+                #if DEBUG
+                print("[AudioManager] preloaded SFX: \(name)")
+                #endif
+            } catch {
+                #if DEBUG
+                print("[AudioManager] preload failed for '\(name)': \(error)")
+                #endif
+            }
+        }
+    }
+
     /// 짧은 효과음 일회 재생. 파일이 없으면 no-op.
     /// `volumeScale`은 0...1 — 최종 볼륨은 `sfxVolume * volumeScale * (muted ? 0 : 1)`.
     func playSFX(named name: String, volumeScale: Float = 1.0) {
-        guard let url = urlForResource(named: name) else { return }
+        guard let url = urlForResource(named: name) else {
+            #if DEBUG
+            print("[AudioManager] SFX not found in bundle: \(name)")
+            #endif
+            return
+        }
+
+        ensureSessionActive()
 
         // 재사용 가능한 플레이어 찾기 (재생이 끝난 것)
         if let idle = sfxPlayers.first(where: { !$0.isPlaying }),
            idle.url == url {
             idle.volume = effectiveSFXVolume(scale: volumeScale)
             idle.currentTime = 0
-            idle.play()
+            let ok = idle.play()
+            #if DEBUG
+            print("[AudioManager] SFX replay '\(name)' play()=\(ok) vol=\(idle.volume)")
+            #endif
             return
         }
 
@@ -155,7 +214,14 @@ final class AudioManager {
             let player = try AVAudioPlayer(contentsOf: url)
             player.volume = effectiveSFXVolume(scale: volumeScale)
             player.prepareToPlay()
-            player.play()
+            let ok = player.play()
+            #if DEBUG
+            let session = AVAudioSession.sharedInstance()
+            print("[AudioManager] SFX new '\(name)' play()=\(ok) vol=\(player.volume) " +
+                  "duration=\(player.duration) isPlaying=\(player.isPlaying) " +
+                  "session.category=\(session.category.rawValue) " +
+                  "outputVol=\(session.outputVolume)")
+            #endif
 
             // 풀 관리 — 제한 초과 시 가장 오래된(정지된) 것 제거
             if sfxPlayers.count >= sfxPoolLimit {
@@ -165,7 +231,9 @@ final class AudioManager {
             }
             sfxPlayers.append(player)
         } catch {
-            // 재생 실패 — 무시
+            #if DEBUG
+            print("[AudioManager] SFX init failed for '\(name)' at \(url.path): \(error)")
+            #endif
         }
     }
 
